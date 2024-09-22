@@ -1,4 +1,4 @@
-#include "SimpleCache.h"
+#include "./Task1/L1Cache.h"
 
 int main() {
 
@@ -6,25 +6,30 @@ int main() {
 
   resetTime();
   initCache();
-  value1 = -1;
+  value1 = 37;
   value2 = 0;
 
-  write(1, (uint8_t *)(&value1));
+  write(356, (uint8_t *)(&value1));
 
-  clock = getTime();
-  printf("Time: %d\n", clock);
+  //clock = getTime();
+  //printf("Time: %d\n", clock);
 
-  read(1, (uint8_t *)(&value2));
-  clock = getTime();
-  printf("Time: %d\n", clock);
-
+  read(356, (uint8_t *)(&value2));
+  //clock = getTime();
+  //printf("Time: %d\n", clock);
+  printf("value2: %d\n", value2);
+  printf("value1: %d\n", value1);
   write(512, (uint8_t *)(&value1));
-  clock = getTime();
-  printf("Time: %d\n", clock);
+  //clock = getTime();
+  //printf("Time: %d\n", clock);
 
   read(512, (uint8_t *)(&value2));
-  clock = getTime();
-  printf("Time: %d\n", clock);
+  //clock = getTime();
+  //printf("Time: %d\n", clock);
+  printf("value2: %d\n", value2);
+  printf("value1: %d\n", value1);
+
+  
 
   return 0;
 }
