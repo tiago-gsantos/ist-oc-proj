@@ -1,9 +1,9 @@
 CC = gcc
 CFLAGS=-Wall -Wextra
-TARGET=L1Cache
+TARGET=L2Cache
 
 all:
-	$(CC) $(CFLAGS) ./tests/SimpleProgram.c ./Task1/L1Cache.c -o $(TARGET)
+	$(CC) $(CFLAGS) ./tests/SimpleProgram.c ./Task2/L2Cache.c -o $(TARGET)
 
 clean:
 	rm $(TARGET)
