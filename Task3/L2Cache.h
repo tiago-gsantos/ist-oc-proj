@@ -8,9 +8,10 @@
 #include "../Cache.h"
 
 /*************** Auxiliar *********************/
-uint32_t log2(uint32_t x);
 
 uint32_t pow2(uint32_t e);
+
+uint32_t logBase2(uint32_t x);
 
 /**************** Time Manipulation ***************/
 void resetTime();
@@ -26,6 +27,17 @@ void initCache();
 void accessL1(uint32_t, uint8_t *, uint32_t);
 void accessL2(uint32_t, uint8_t *, uint32_t);
 
+typedef struct CacheLine2way {
+  uint8_t Valid1;
+  uint8_t Dirty1;
+  uint32_t Tag1;
+  uint32_t time1;
+  uint8_t Valid2;
+  uint8_t Dirty2;
+  uint32_t Tag2;
+  uint32_t time2;
+} CacheLine2way;
+
 typedef struct CacheLine {
   uint8_t Valid;
   uint8_t Dirty;
@@ -39,7 +51,7 @@ typedef struct CacheL1 {
 
 typedef struct CacheL2 {
   uint32_t init;
-  CacheLine lines[L2_SIZE/BLOCK_SIZE];
+  CacheLine2way lines[L2_SIZE/(BLOCK_SIZE*2)];
 } CacheL2;
 
 /*********************** Interfaces *************************/

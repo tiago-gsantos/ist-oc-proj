@@ -1,4 +1,5 @@
 #include "L1Cache.h"
+#include <math.h>
 
 uint8_t L1CacheData[L1_SIZE];
 uint8_t L2Cache[L2_SIZE];
@@ -33,21 +34,14 @@ void accessDRAM(uint32_t address, uint8_t *data, uint32_t mode) {
 void initCache() { L1Cache.init = 0; }
 
 uint32_t log2(uint32_t x) {
-  uint32_t log = 0;
-  
-  //Divide por 2 até dar 1
-  while (x >>= 1) { 
-    log++;
-  }
-
-  return log;
+  return log(x) / log(2);
 }
 
-uint32_t pow(uint32_t x, uint32_t e) {
+uint32_t pow2(uint32_t e) {
   uint32_t pow = 1;
 
   while (e > 0) { 
-    pow = pow * x;
+    pow = pow * 2;
     e --;
   }
 
@@ -71,7 +65,7 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
   uint32_t num_bits_index = log2(L1_SIZE/BLOCK_SIZE);
 
   Tag = address >> (num_bits_offset + num_bits_index);
-  index = (address >> num_bits_offset) % (pow(2,num_bits_index));
+  index = (address >> num_bits_offset) % (pow2(num_bits_index));
 
   //printf("tag: %b\n", Tag);
   //printf("index: %b\n", index);
@@ -100,8 +94,8 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
     Line->Dirty = 0;
   }
 
-  uint32_t num_word = (address >> log2(WORD_SIZE)) % pow(2, num_bits_offset-log2(WORD_SIZE));
-  uint32_t num_byte = address % pow(2, num_bits_offset-log2(BLOCK_SIZE/WORD_SIZE));
+  uint32_t num_word = (address >> log2(WORD_SIZE)) % pow2(num_bits_offset-log2(WORD_SIZE));
+  uint32_t num_byte = address % pow2(num_bits_offset-log2(BLOCK_SIZE/WORD_SIZE));
 
   //printf("num_word: %d\n", num_word);
   //printf("num_byte: %d\n", num_byte);

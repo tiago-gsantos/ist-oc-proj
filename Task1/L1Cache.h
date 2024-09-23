@@ -10,7 +10,7 @@
 /*************** Auxiliar *********************/
 uint32_t log2(uint32_t x);
 
-uint32_t pow(uint32_t x, uint32_t e);
+uint32_t pow2(uint32_t e);
 
 /**************** Time Manipulation ***************/
 void resetTime();

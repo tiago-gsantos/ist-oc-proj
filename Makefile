@@ -3,7 +3,9 @@ CFLAGS=-Wall -Wextra
 TARGET=L2Cache
 
 all:
-	$(CC) $(CFLAGS) ./tests/SimpleProgram.c ./Task2/L2Cache.c -o $(TARGET)
+	$(CC) $(CFLAGS) ./tests/SimpleProgram.c ./Task3/L2Cache.c -o $(TARGET)
+	./$(TARGET) > out.txt
+	diff out.txt ./tests/results_L2_2W.txt > diff.txt
 
 clean:
-	rm $(TARGET)
+	rm $(TARGET) out.txt diff.txt
