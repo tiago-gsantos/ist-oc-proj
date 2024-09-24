@@ -135,6 +135,7 @@ void accessL2(uint32_t address, uint8_t *data, uint32_t mode) {
     for(int i = 0; i < (L2_SIZE/(2*BLOCK_SIZE)); i++){
       L2Cache.lines[i].Valid1 = 0;
       L2Cache.lines[i].Valid2 = 0;
+      L2Cache.lines[i].LRUblock = 0;
     }
     L2Cache.init = 1;
   }
@@ -161,10 +162,7 @@ void accessL2(uint32_t address, uint8_t *data, uint32_t mode) {
   if ((!Line->Valid1 || Line->Tag1 != Tag) && (!Line->Valid2 || Line->Tag2 != Tag)) {         // if block not present - miss
     accessDRAM(MemAddress, TempBlock, MODE_READ); // get new block from DRAM
     
-    if(Line->time1 > Line->time2) {
-      num_block = 0;
-    }
-    else{ num_block = 1;}
+    num_block = Line->LRUblock;
 
     if(num_block == 0){
       if ((Line->Valid1) && (Line->Dirty1)) { 
@@ -213,10 +211,10 @@ void accessL2(uint32_t address, uint8_t *data, uint32_t mode) {
     time += L2_READ_TIME;
 
     if(num_block == 0){
-      Line->time1 = time;
+      Line->LRUblock = 1;
     }
     else{
-      Line->time2 = time;
+      Line->LRUblock = 0;
     }
   }
   
@@ -227,11 +225,11 @@ void accessL2(uint32_t address, uint8_t *data, uint32_t mode) {
     
     if(num_block == 0){
       Line->Dirty1 = 1;
-      Line->time1 = time;
+      Line->LRUblock = 1;
     }
     else{
       Line->Dirty2 = 1;
-      Line->time2 = time;
+      Line->LRUblock = 0;
     }
   }
 }

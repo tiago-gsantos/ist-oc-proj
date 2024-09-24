@@ -57,6 +57,8 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
   if (L1Cache.init == 0) {
     for(int i = 0; i < (L1_SIZE/BLOCK_SIZE); i++){
       L1Cache.lines[i].Valid = 0;
+      L1Cache.lines[i].Dirty = 0;
+      L1Cache.lines[i].Tag = 0;
     }
     L1Cache.init = 1;
   }

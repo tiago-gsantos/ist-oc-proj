@@ -31,11 +31,11 @@ typedef struct CacheLine2way {
   uint8_t Valid1;
   uint8_t Dirty1;
   uint32_t Tag1;
-  uint32_t time1;
   uint8_t Valid2;
   uint8_t Dirty2;
   uint32_t Tag2;
-  uint32_t time2;
+  uint8_t LRUblock;
+  
 } CacheLine2way;
 
 typedef struct CacheLine {
