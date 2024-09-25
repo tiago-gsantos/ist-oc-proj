@@ -163,8 +163,8 @@ void accessL2(uint32_t address, uint8_t *data, uint32_t mode) {
     Line->Dirty[num_block] = 0;
   }
 
-  uint32_t num_word = (address >> logBase2(WORD_SIZE)) % pow2(num_bits_offset-logBase2(WORD_SIZE));
-  uint32_t num_byte = address % pow2(num_bits_offset-logBase2(BLOCK_SIZE/WORD_SIZE));
+  uint32_t num_word = (address % BLOCK_SIZE) >> logBase2(WORD_SIZE);
+  uint32_t num_byte = address % WORD_SIZE;
 
   if(num_block == -1) { // cache hit
     if(Line->Tag[0] == Tag && Line->Valid[0] == 1)

@@ -9,12 +9,12 @@ CacheL1 L1Cache;
 uint32_t logBase2(uint32_t x) {
   uint32_t log = 0;
 
-    while (x > 1) {
-        x = x / 2;
-        log++;
-    }
+  while (x > 1) {
+    x = x / 2;
+    log++;
+  }
 
-    return log;
+  return log;
 }
 
 uint32_t pow2(uint32_t e) {
@@ -91,11 +91,11 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
     memcpy(&(L1CacheData[index * BLOCK_SIZE]), TempBlock, BLOCK_SIZE); // write new block from DRAM to cache
     Line->Valid = 1;
     Line->Tag = Tag;
-    Line->Dirty = 0; // pk é que aqui nao continua dirty?
+    Line->Dirty = 0;
   }
 
-  uint32_t num_word = (address >> logBase2(WORD_SIZE)) % pow2(num_bits_offset-logBase2(WORD_SIZE)); // = (address % BLOCK_SIZE) >> logBase2(WORD_SIZE) ???
-  uint32_t num_byte = address % pow2(num_bits_offset-logBase2(BLOCK_SIZE/WORD_SIZE)); // = addresss % pow2(WORD_SIZE) ???
+  uint32_t num_word = (address % BLOCK_SIZE) >> logBase2(WORD_SIZE);
+  uint32_t num_byte = address % WORD_SIZE;
 
   if (mode == MODE_READ) {    // read data from cache line
     memcpy(data, (&L1CacheData[index * BLOCK_SIZE] + num_word * WORD_SIZE + num_byte),
