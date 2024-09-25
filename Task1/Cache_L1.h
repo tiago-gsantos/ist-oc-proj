@@ -1,5 +1,5 @@
-#ifndef L2CACHE_H
-#define L2CACHE_H
+#ifndef CACHE_L1_H
+#define CACHE_L1_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,8 +7,10 @@
 #include <stdint.h>
 #include "../Cache.h"
 
+#define L1_NUM_LINES (L1_SIZE/BLOCK_SIZE)
+
 /*************** Auxiliar *********************/
-uint32_t log2(uint32_t x);
+uint32_t logBase2(uint32_t x);
 
 uint32_t pow2(uint32_t e);
 
@@ -23,8 +25,8 @@ void accessDRAM(uint32_t, uint8_t *, uint32_t);
 /*********************** Cache *************************/
 
 void initCache();
+
 void accessL1(uint32_t, uint8_t *, uint32_t);
-void accessL2(uint32_t, uint8_t *, uint32_t);
 
 typedef struct CacheLine {
   uint8_t Valid;
@@ -34,13 +36,8 @@ typedef struct CacheLine {
 
 typedef struct CacheL1 {
   uint32_t init;
-  CacheLine lines[L1_SIZE/BLOCK_SIZE];
+  CacheLine lines[L1_NUM_LINES];
 } CacheL1;
-
-typedef struct CacheL2 {
-  uint32_t init;
-  CacheLine lines[L2_SIZE/BLOCK_SIZE];
-} CacheL2;
 
 /*********************** Interfaces *************************/
 

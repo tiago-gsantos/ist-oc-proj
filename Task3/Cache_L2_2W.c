@@ -1,11 +1,34 @@
-#include "L2Cache.h"
+#include "Cache_L2_2W.h"
 
 uint8_t L1CacheData[L1_SIZE];
-uint8_t L2CacheData[L2_SIZE/(2*BLOCK_SIZE)][2*BLOCK_SIZE];
+uint8_t L2CacheData[L2_NUM_LINES][2*BLOCK_SIZE];
 uint8_t DRAM[DRAM_SIZE];
 uint32_t time;
 CacheL1 L1Cache;
 CacheL2 L2Cache;
+
+/**************** Auxiliar ******************/
+uint32_t logBase2(uint32_t x) {
+  uint32_t log = 0;
+
+    while (x > 1) {
+        x = x / 2;
+        log++;
+    }
+
+    return log;
+}
+
+uint32_t pow2(uint32_t e) {
+  uint32_t pow = 1;
+
+  while (e > 0) { 
+    pow = pow * 2;
+    e --;
+  }
+
+  return pow;
+}
 
 /**************** Time Manipulation ***************/
 void resetTime() { time = 0; }
@@ -30,75 +53,45 @@ void accessDRAM(uint32_t address, uint8_t *data, uint32_t mode) {
 }
 
 /*********************** L1 cache *************************/
-
 void initCache() { 
   L1Cache.init = 0; 
   L2Cache.init=0;
 }
 
-uint32_t pow2(uint32_t e) {
-  uint32_t pow = 1;
-
-  while (e > 0) { 
-    pow = pow * 2;
-    e --;
-  }
-
-  return pow;
-}
-
-uint32_t logBase2(uint32_t x) {
-  uint32_t log = 0;
-
-    while (x > 1) {
-        x = x / 2;
-        log++;
-    }
-
-    return log;
-}
-
-
 void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
 
-  uint32_t index, Tag, MemAddress;
+  uint32_t index, Tag, MemAddress, num_bits_index, num_bits_offset;
   uint8_t TempBlock[BLOCK_SIZE];
 
   if (L1Cache.init == 0) {
-    for(int i = 0; i < (L1_SIZE/BLOCK_SIZE); i++){
+    for(int i = 0; i < L1_NUM_LINES; i++){
       L1Cache.lines[i].Valid = 0;
     }
     L1Cache.init = 1;
   }
   
-  uint32_t num_bits_offset = logBase2(BLOCK_SIZE);
-  uint32_t num_bits_index = logBase2(L1_SIZE/BLOCK_SIZE);
+  num_bits_offset = logBase2(BLOCK_SIZE);
+  num_bits_index = logBase2(L1_NUM_LINES);
 
   Tag = address >> (num_bits_offset + num_bits_index);
-  index = (address >> num_bits_offset) % (pow2(num_bits_index));
+  index = (address >> num_bits_offset) % L1_NUM_LINES;
 
-  //printf("tag: %b\n", Tag);
-  //printf("index: %b\n", index);
+  MemAddress = (address >> num_bits_offset) << num_bits_offset; 
   
-
   CacheLine *Line = &L1Cache.lines[index];
   
-  MemAddress = (address >> num_bits_offset) << num_bits_offset; 
-
-  //printf("address: %b\n", MemAddress);
-
   /* access Cache*/
 
   if (!Line->Valid || Line->Tag != Tag) {         // if block not present - miss
     accessL2(MemAddress, TempBlock, MODE_READ); // get new block from L2
 
-    if ((Line->Valid) && (Line->Dirty)) { 
+    if ((Line->Valid) && (Line->Dirty)) { // if block dirty
       uint32_t MemAddressDirty = ((Line->Tag << num_bits_index) + index) << num_bits_offset;
       
-      accessL2(MemAddressDirty, &(L1CacheData[index * BLOCK_SIZE]), MODE_WRITE);
+      accessL2(MemAddressDirty, &(L1CacheData[index * BLOCK_SIZE]), MODE_WRITE); // update block in L2
     }
 
-    memcpy(&(L1CacheData[index * BLOCK_SIZE]), TempBlock, BLOCK_SIZE); 
+    memcpy(&(L1CacheData[index * BLOCK_SIZE]), TempBlock, BLOCK_SIZE); // write new block from L2 to cache
     Line->Valid = 1;
     Line->Tag = Tag;
     Line->Dirty = 0;
@@ -106,9 +99,6 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
 
   uint32_t num_word = (address >> logBase2(WORD_SIZE)) % pow2(num_bits_offset-logBase2(WORD_SIZE));
   uint32_t num_byte = address % pow2(num_bits_offset-logBase2(BLOCK_SIZE/WORD_SIZE));
-
-  //printf("num_word: %d\n", num_word);
-  //printf("num_byte: %d\n", num_byte);
 
   if (mode == MODE_READ) {    // read data from cache line
     memcpy(data, (&L1CacheData[index * BLOCK_SIZE] + num_word * WORD_SIZE + num_byte),
@@ -128,110 +118,79 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
 
 void accessL2(uint32_t address, uint8_t *data, uint32_t mode) {
 
-  uint32_t index, Tag, MemAddress;
+  uint32_t index, Tag, MemAddress, num_bits_index, num_bits_offset;
   uint8_t TempBlock[BLOCK_SIZE];
 
+  // init cache
   if (L2Cache.init == 0) {
-    for(int i = 0; i < (L2_SIZE/(2*BLOCK_SIZE)); i++){
-      L2Cache.lines[i].Valid1 = 0;
-      L2Cache.lines[i].Valid2 = 0;
+    for(int i = 0; i < L2_NUM_LINES; i++){
+      L2Cache.lines[i].Valid[0] = 0;
+      L2Cache.lines[i].Valid[1] = 0;
       L2Cache.lines[i].LRUblock = 0;
     }
     L2Cache.init = 1;
   }
   
-  uint32_t num_bits_offset = logBase2(BLOCK_SIZE);
-  uint32_t num_bits_index = logBase2(L2_SIZE/(BLOCK_SIZE*2));
+  num_bits_offset = logBase2(BLOCK_SIZE);
+  num_bits_index = logBase2(L2_SIZE/(BLOCK_SIZE*2));
 
   Tag = address >> (num_bits_offset + num_bits_index);
-  index = (address >> num_bits_offset) % (pow2(num_bits_index));
+  index = (address >> num_bits_offset) % L2_NUM_LINES;
 
-  //printf("tag: %b\n", Tag);
-  //printf("index: %b\n", index);
-
-  CacheLine2way *Line = &L2Cache.lines[index];
-  
   MemAddress = (address >> num_bits_offset) << num_bits_offset; 
-
-  //printf("address: %b\n", MemAddress);
+  
+  CacheLine2way *Line = &L2Cache.lines[index];
 
   /* access Cache*/
 
-  int num_block = -1;
+  int num_block = -1; // block we want to read/write from cache
 
-  if ((!Line->Valid1 || Line->Tag1 != Tag) && (!Line->Valid2 || Line->Tag2 != Tag)) {         // if block not present - miss
+  if ((!Line->Valid[0] || Line->Tag[0] != Tag) && 
+      (!Line->Valid[1] || Line->Tag[1] != Tag)) {  // if block not present - miss
     accessDRAM(MemAddress, TempBlock, MODE_READ); // get new block from DRAM
     
     num_block = Line->LRUblock;
 
-    if(num_block == 0){
-      if ((Line->Valid1) && (Line->Dirty1)) { 
-        uint32_t MemAddressDirty = ((Line->Tag1 << num_bits_index) + index) << num_bits_offset;
-        
-        accessDRAM(MemAddressDirty, &(L2CacheData[index][0]), MODE_WRITE);
-      }
+    if ((Line->Valid[num_block]) && (Line->Dirty[num_block])) { // if LRU block is dirty
+      uint32_t MemAddressDirty = ((Line->Tag[num_block] << num_bits_index) + index) << num_bits_offset;
       
-      memcpy(&(L2CacheData[index][0]), TempBlock, BLOCK_SIZE); 
-      Line->Valid1 = 1;
-      Line->Tag1 = Tag;
-      Line->Dirty1 = 0;
+      accessDRAM(MemAddressDirty, &(L2CacheData[index][num_block]), MODE_WRITE); // update block in DRAM
     }
-    else {
-      if ((Line->Valid2) && (Line->Dirty2)) { 
-        uint32_t MemAddressDirty = ((Line->Tag2 << num_bits_index) + index) << num_bits_offset;
-        
-        accessDRAM(MemAddressDirty, &(L2CacheData[index][1]), MODE_WRITE);
-      }
-      
-      memcpy(&(L2CacheData[index][1]), TempBlock, BLOCK_SIZE); 
-      Line->Valid2 = 1;
-      Line->Tag2 = Tag;
-      Line->Dirty2 = 0;
-    }
+    
+    memcpy(&(L2CacheData[index][num_block]), TempBlock, BLOCK_SIZE); // write new block from DRAM to cache
+    Line->Valid[num_block] = 1;
+    Line->Tag[num_block] = Tag;
+    Line->Dirty[num_block] = 0;
   }
 
   uint32_t num_word = (address >> logBase2(WORD_SIZE)) % pow2(num_bits_offset-logBase2(WORD_SIZE));
   uint32_t num_byte = address % pow2(num_bits_offset-logBase2(BLOCK_SIZE/WORD_SIZE));
 
-  //printf("num_word: %d\n", num_word);
-  //printf("num_byte: %d\n", num_byte);
-
-  if(num_block == -1) {
-    if(Line->Tag1 == Tag && Line->Valid1 == 1) {
+  if(num_block == -1) { // cache hit
+    if(Line->Tag[0] == Tag && Line->Valid[0] == 1)
       num_block = 0;
-    }
-    else{ 
+    else
       num_block = 1;
-    }
   }
 
   if (mode == MODE_READ) {    // read data from cache line
     memcpy(data, (&L2CacheData[index][num_block] + num_word * WORD_SIZE + num_byte),
     WORD_SIZE - num_byte);
     time += L2_READ_TIME;
-
-    if(num_block == 0){
-      Line->LRUblock = 1;
-    }
-    else{
-      Line->LRUblock = 0;
-    }
   }
   
   if (mode == MODE_WRITE) { // write data from cache line
     memcpy((&L2CacheData[index][num_block] + num_word * WORD_SIZE + num_byte), data,
     WORD_SIZE - num_byte);
     time += L2_WRITE_TIME;
-    
-    if(num_block == 0){
-      Line->Dirty1 = 1;
-      Line->LRUblock = 1;
-    }
-    else{
-      Line->Dirty2 = 1;
-      Line->LRUblock = 0;
-    }
+    Line->Dirty[num_block] = 1;
   }
+
+  // update LRU
+  if(num_block == 0)
+    Line->LRUblock = 1;
+  else
+    Line->LRUblock = 0;
 }
 
 
