@@ -76,7 +76,7 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
   Tag = address >> (num_bits_offset + num_bits_index);
   index = (address >> num_bits_offset) % L1_NUM_LINES;
 
-  MemAddress = (address >> num_bits_offset) << num_bits_offset; 
+  MemAddress = (address >> num_bits_offset) << num_bits_offset;
 
   CacheLine *Line = &L1Cache.lines[index];
 
@@ -87,7 +87,6 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
 
     if ((Line->Valid) && (Line->Dirty)) { // if block dirty
       uint32_t MemAddressDirty = ((Line->Tag << num_bits_index) + index) << num_bits_offset;
-      
       accessL2(MemAddressDirty, &(L1CacheData[index * BLOCK_SIZE]), MODE_WRITE); // update block in L2
     }
 
@@ -134,15 +133,15 @@ void accessL2(uint32_t address, uint8_t *data, uint32_t mode) {
   Tag = address >> (num_bits_offset + num_bits_index);
   index = (address >> num_bits_offset) % L2_NUM_LINES;
 
-  MemAddress = (address >> num_bits_offset) << num_bits_offset; 
-  
+  MemAddress = (address >> num_bits_offset) << num_bits_offset;
+
   CacheLine *Line = &L2Cache.lines[index];
 
   /* access Cache*/
 
   if (!Line->Valid || Line->Tag != Tag) {         // if block not present - miss
     accessDRAM(MemAddress, TempBlock, MODE_READ); // get new block from DRAM
-
+    
     if ((Line->Valid) && (Line->Dirty)) { // if block dirty
       uint32_t MemAddressDirty = ((Line->Tag << num_bits_index) + index) << num_bits_offset;
       

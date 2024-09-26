@@ -74,11 +74,10 @@ void accessL1(uint32_t address, uint8_t *data, uint32_t mode) {
   index = (address >> num_bits_offset) % L1_NUM_LINES;
   
   MemAddress = (address >> num_bits_offset) << num_bits_offset; 
-
+  
   CacheLine *Line = &L1Cache.lines[index];
   
   /* access Cache*/
-
   if (!Line->Valid || Line->Tag != Tag) {         // if block not present - miss
     accessDRAM(MemAddress, TempBlock, MODE_READ); // get new block from DRAM
 

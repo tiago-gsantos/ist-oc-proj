@@ -132,7 +132,7 @@ void accessL2(uint32_t address, uint8_t *data, uint32_t mode) {
   }
   
   num_bits_offset = logBase2(BLOCK_SIZE);
-  num_bits_index = logBase2(L2_SIZE/(BLOCK_SIZE*2));
+  num_bits_index = logBase2(L2_NUM_LINES);
 
   Tag = address >> (num_bits_offset + num_bits_index);
   index = (address >> num_bits_offset) % L2_NUM_LINES;
@@ -174,13 +174,13 @@ void accessL2(uint32_t address, uint8_t *data, uint32_t mode) {
   }
 
   if (mode == MODE_READ) {    // read data from cache line
-    memcpy(data, (&L2CacheData[index][num_block] + num_word * WORD_SIZE + num_byte),
+    memcpy(data, (&L2CacheData[index][num_block * BLOCK_SIZE] + num_word * WORD_SIZE + num_byte),
     WORD_SIZE - num_byte);
     time += L2_READ_TIME;
   }
   
   if (mode == MODE_WRITE) { // write data from cache line
-    memcpy((&L2CacheData[index][num_block] + num_word * WORD_SIZE + num_byte), data,
+    memcpy((&L2CacheData[index][num_block * BLOCK_SIZE] + num_word * WORD_SIZE + num_byte), data,
     WORD_SIZE - num_byte);
     time += L2_WRITE_TIME;
     Line->Dirty[num_block] = 1;
